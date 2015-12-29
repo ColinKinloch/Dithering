@@ -1,3 +1,12 @@
 html {
-  background: blue;
+  background: repeating-linear-gradient(to bottom right, gainsboro 10px, #222, gainsboro 20px);
+}
+
+body {
+  margin: 0;
+}
+
+#main {
+  height: 100%;
+  width: 100%;
 }

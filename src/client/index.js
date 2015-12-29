@@ -4,24 +4,9 @@ let canvas = document.querySelector('canvas')
 let gl = window.gl = canvas.getContext('webgl', {
   alpha: true
 })
-let resize = (width, height) => {
-  canvas.width = width
-  canvas.height = height
-  gl.viewport(0, 0, width, height)
-  render()
-}
-window.addEventListener('resize', function (e) {
-  resize(e.target.innerWidth, e.target.innerHeight)
-})
 
-gl.clearColor(1, 0, 1, 1)
+gl.clearColor(0.8, 0.8, 1, 1)
 gl.clearDepth(1)
-
-/*
-let frame = gl.createFramebuffer()
-gl.bindFramebuffer(gl.FRAMEBUFFER, frame)
-gl.framebufferTexture2d(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, gl.createTexture(), 0)
-*/
 
 let testTex = gl.createTexture()
 gl.bindTexture(gl.TEXTURE_2D, testTex)
@@ -30,25 +15,6 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 gl.bindTexture(gl.TEXTURE_2D, null)
-
-fetch('./test.png')
-.then((res) => {
-  return res.blob()
-})
-.then((blob) => {
-  return new Promise((resolve, reject) => {
-    let img = new Image()
-    img.onload = () => {
-      resolve(img)
-    }
-    img.src = URL.createObjectURL(blob)
-  })
-})
-.then((img) => {
-  gl.bindTexture(gl.TEXTURE_2D, testTex)
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
-  render()
-})
 
 let bayer = [
    1, 49, 13, 61,  4, 52, 16, 64,
@@ -135,27 +101,59 @@ let frameUniform = gl.getUniformLocation(program, 'frame')
 let bayerUniform = gl.getUniformLocation(program, 'bayer')
 let sizeUniform = gl.getUniformLocation(program, 'destSize')
 
+gl.useProgram(program)
+gl.uniform1i(frameUniform, 0)
+gl.uniform1i(bayerUniform, 1)
+
 let positionAttrib = gl.getAttribLocation(program, 'position')
 gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
 gl.vertexAttribPointer(positionAttrib, 2, gl.UNSIGNED_BYTE, false, 0, 0)
 
-window.dispatchEvent(new Event('resize'))
-
-function render () {
+let render = () => {
   gl.useProgram(program)
   gl.uniform2iv(sizeUniform, [canvas.width, canvas.height])
   gl.activeTexture(gl.TEXTURE0 + 0)
   gl.bindTexture(gl.TEXTURE_2D, testTex)
-  gl.uniform1i(frameUniform, 0)
   gl.activeTexture(gl.TEXTURE0 + 1)
   gl.bindTexture(gl.TEXTURE_2D, bayerTex)
-  gl.uniform1i(bayerUniform, 1)
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null)
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
   gl.enableVertexAttribArray(positionAttrib)
   gl.drawArrays(gl.TRIANGLES, 0, 3)
   gl.disableVertexAttribArray(positionAttrib)
+
+  gl.activeTexture(gl.TEXTURE0 + 1)
+  gl.bindTexture(gl.TEXTURE_2D, null)
+  gl.activeTexture(gl.TEXTURE0 + 0)
   gl.bindTexture(gl.TEXTURE_2D, null)
 }
+
+fetch('./test.png')
+.then((res) => {
+  return res.blob()
+})
+.then((blob) => {
+  return new Promise((resolve, reject) => {
+    let img = new Image()
+    img.onload = () => {
+      resolve(img)
+    }
+    img.src = URL.createObjectURL(blob)
+  })
+})
+.then((img) => {
+  gl.bindTexture(gl.TEXTURE_2D, testTex)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+  gl.bindTexture(gl.TEXTURE_2D, null)
+  render()
+})
+
+let resize = (width, height) => {
+  canvas.width = width
+  canvas.height = height
+  gl.viewport(0, 0, width, height)
+  render()
+}
+window.addEventListener('resize', (e) => resize(canvas.clientWidth, canvas.clientHeight))
+window.dispatchEvent(new Event('resize'))

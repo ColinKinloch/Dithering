@@ -25,7 +25,7 @@ varying vec2 screenCoord;
 
 void main() {
   float b = bayerer(8., vec2(destSize) * screenCoord);
-  vec4 pixel = 2. * texture2D(frame, screenCoord);
-  vec3 colour = deres(b * pixel.rgb, 4.);
-  gl_FragColor = vec4(colour, pixel.a);
+  vec4 pixel = 1. * texture2D(frame, screenCoord);
+  vec4 colour = deres(b * pixel, 4.);
+  gl_FragColor = vec4(colour.rgb, pixel.a);
 }
